@@ -52,6 +52,7 @@ class csdist(sdist):
         build_tables()
         super().make_release_tree(basedir, files)
 
+
 class cdevelop(develop):
     """coral specialization of setuptools develop class."""
 
@@ -69,7 +70,8 @@ def main():
         "sdist": csdist,
         "develop": cdevelop,
         }
-    scripts = [],
+    scripts = None
+    #scripts = [],
     skw = dict(
         name="living-coral",
         description="The animating and life-affirming code formatter for Xonsh & Python",
