@@ -46,6 +46,18 @@ def swaplexer():
     lexer.special_handlers.update(shold)
 
 
+class Lexer(lexer.Lexer):
+    """A lexer that exposes more tokens"""
+
+    @property
+    def tokens(self):
+        if self._tokens is None or 'COMMENT' not in self._tokens:
+            super().tokens
+            self._tokens += ('COMMENT', 'ENCODING', 'ENDMARKER', 'NL')
+        return self._tokens
+
+
+
 #
 # Parser tools
 #
@@ -64,6 +76,7 @@ class Parser(XonshParser):
         yacc_table="coral.parser_table",
         yacc_debug=False,
         outputdir=None,
+        lexer=None,
     ):
         """Parameters
         ----------
@@ -80,7 +93,10 @@ class Parser(XonshParser):
         outputdir : str or None, optional
             The directory to place generated tables within. Defaults to the root
             coral dir.
+        lexer : Lexer instance or None:
+            optional lexer object to pass in.
         """
+        lexer = Lexer() if lexer is None else lexer
         tok_rules = [
             "errortoken",
             "comment",
@@ -94,7 +110,7 @@ class Parser(XonshParser):
             outputdir = os.path.dirname(os.path.dirname(__file__))
         super().__init__(lexer_optimize=lexer_optimize, lexer_table=lexer_table,
                          yacc_optimize=yacc_optimize, yacc_table=yacc_table,
-                         yacc_debug=yacc_debug, outputdir=outputdir)
+                         yacc_debug=yacc_debug, outputdir=outputdir, lexer=lexer)
 
     def parse(self, s, filename="<code>", mode="exec", debug_level=0):
         """Returns an abstract syntax tree of xonsh code.
