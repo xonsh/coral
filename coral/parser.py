@@ -4,6 +4,7 @@ from ast import AST
 from contextlib import contextmanager
 
 from xonsh import lexer
+from xonsh.ply.ply.lex import LexToken
 from xonsh.tokenize import NL, COMMENT, ENCODING, ENDMARKER
 from xonsh.parser import Parser as XonshParser
 
@@ -26,8 +27,25 @@ class Comment(AST):
 # Lexer tools
 #
 
+def _new_token(type, value, lineno, lexpos):
+    o = LexToken()
+    o.type = type
+    o.value = value
+    o.lineno = lineno
+    o.lexpos = lexpos
+    return o
+
+
 def handle_indentity(state, token):
     yield token
+
+
+#def handle_nl(state, token):
+#    yield _new_token("NEWLINE", token.string, token.start[0], token.start[1])
+
+
+def handle_comment(state, token):
+    yield _new_token("COMMENT", token.string, token.start[0], token.start[1])
 
 
 @contextmanager
@@ -35,10 +53,10 @@ def swaplexer():
     """Performs some global lexer context switching"""
     shold = lexer.special_handlers.copy()
     shnew = {
-        NL: handle_indentity,
-        COMMENT: handle_indentity,
-        ENCODING: handle_indentity,
-        ENDMARKE: handle_indentity,
+        #NL: handle_nl,
+        COMMENT: handle_comment,
+        #ENCODING: handle_indentity,
+        #ENDMARKER: handle_indentity,
         }
     lexer.special_handlers.update(shnew)
     yield
@@ -61,6 +79,13 @@ class Lexer(lexer.Lexer):
 #
 # Parser tools
 #
+
+@contextmanager
+def swapcomments(parser):
+    parser.comments = []
+    yield
+    parser.comments = None
+
 
 class Parser(XonshParser):
     """Custom parser that is suited to static code analysis because
@@ -111,6 +136,7 @@ class Parser(XonshParser):
         super().__init__(lexer_optimize=lexer_optimize, lexer_table=lexer_table,
                          yacc_optimize=yacc_optimize, yacc_table=yacc_table,
                          yacc_debug=yacc_debug, outputdir=outputdir, lexer=lexer)
+        self.comments = None
 
     def parse(self, s, filename="<code>", mode="exec", debug_level=0):
         """Returns an abstract syntax tree of xonsh code.
@@ -130,22 +156,15 @@ class Parser(XonshParser):
         -------
         tree : AST
         """
-        with swaplexer():
+        with swaplexer(), swapcomments(self):
             tree = super().parse(s, filename=filename, mode=mode, debug_level=debug_level)
+            tree.comments = comments
         return tree
-
-    def p_expr_extra(self, p):
-        """expr : errortoken
-                | comment
-        """
-        p[0] = p[1]
-
-    def p_errortoken(self, p):
-        """errortoken : errortoken_tok"""
-        p1 = p[1]
-        p[0] = Errortoken(token=p1, lineno=p1.lineno, col_offset=p1.lexpos)
 
     def p_comment(self, p):
         """comment : comment_tok"""
+        # it is important that this isn't pushed onto the parser stack!
+        # don't assign to p[0]!
         p1 = p[1]
-        p[0] = Comment(s=p1.value, lineno=p1.lineno, col_offset=p1.lexpos)
+        c = Comment(s=p1.value, lineno=p1.lineno, col_offset=p1.lexpos)
+        self.comments.append(c)
