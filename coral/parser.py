@@ -6,7 +6,7 @@ from contextlib import contextmanager
 from xonsh import lexer
 from xonsh.ply.ply.lex import LexToken
 from xonsh.tokenize import NL, COMMENT, ENCODING, ENDMARKER
-from xonsh.parser import Parser as XonshParser
+from xonsh.execer import Execer
 
 
 #
@@ -36,21 +36,17 @@ def _new_token(type, value, lineno, lexpos):
     return o
 
 
-def handle_indentity(state, token):
-    yield token
-
-
-#def handle_nl(state, token):
-#    yield _new_token("NEWLINE", token.string, token.start[0], token.start[1])
-
-
-def handle_comment(state, token):
-    yield _new_token("COMMENT", token.string, token.start[0], token.start[1])
-
-
 @contextmanager
-def swaplexer():
+def swaplexer(comments):
     """Performs some global lexer context switching"""
+    comments = []
+
+    def handle_comment(state, token):
+        comment = Comment(s=token.string, lineno=token.start[0],
+                          col_offset=token.start[1])
+        comments.append(comment)
+        yield from []
+
     shold = lexer.special_handlers.copy()
     shnew = {
         #NL: handle_nl,
@@ -59,20 +55,9 @@ def swaplexer():
         #ENDMARKER: handle_indentity,
         }
     lexer.special_handlers.update(shnew)
-    yield
+    yield comments
     lexer.special_handlers.clear()
     lexer.special_handlers.update(shold)
-
-
-class Lexer(lexer.Lexer):
-    """A lexer that exposes more tokens"""
-
-    @property
-    def tokens(self):
-        if self._tokens is None or 'COMMENT' not in self._tokens:
-            super().tokens
-            self._tokens += ('COMMENT', 'ENCODING', 'ENDMARKER', 'NL')
-        return self._tokens
 
 
 
@@ -80,14 +65,8 @@ class Lexer(lexer.Lexer):
 # Parser tools
 #
 
-@contextmanager
-def swapcomments(parser):
-    parser.comments = []
-    yield
-    parser.comments = None
 
-
-class Parser(XonshParser):
+class Parser:
     """Custom parser that is suited to static code analysis because
     it does not throw away unused tokens. This makes the job of
     rewriting code much easier.
@@ -95,51 +74,21 @@ class Parser(XonshParser):
 
     def __init__(
         self,
-        lexer_optimize=True,
-        lexer_table="coral.lexer_table",
-        yacc_optimize=True,
-        yacc_table="coral.parser_table",
-        yacc_debug=False,
-        outputdir=None,
-        lexer=None,
     ):
-        """Parameters
-        ----------
-        lexer_optimize : bool, optional
-            Set to false when unstable and true when lexer is stable.
-        lexer_table : str, optional
-            Lexer module used when optimized.
-        yacc_optimize : bool, optional
-            Set to false when unstable and true when parser is stable.
-        yacc_table : str, optional
-            Parser module used when optimized.
-        yacc_debug : debug, optional
-            Dumps extra debug info.
-        outputdir : str or None, optional
-            The directory to place generated tables within. Defaults to the root
-            coral dir.
-        lexer : Lexer instance or None:
-            optional lexer object to pass in.
-        """
-        lexer = Lexer() if lexer is None else lexer
-        tok_rules = [
-            "errortoken",
-            "comment",
-            "nl",
-            "encoding",
-            "endmarker",
-            ]
-        for rule in tok_rules:
-            self._tok_rule(rule)
-        if outputdir is None:
-            outputdir = os.path.dirname(os.path.dirname(__file__))
-        super().__init__(lexer_optimize=lexer_optimize, lexer_table=lexer_table,
-                         yacc_optimize=yacc_optimize, yacc_table=yacc_table,
-                         yacc_debug=yacc_debug, outputdir=outputdir, lexer=lexer)
-        self.comments = None
+        self.execer = Execer()
+
+    @property
+    def lexer(self):
+        return self.execer.parser.lexer
+
+    @property
+    def parser(self):
+        return self.execer.parser
 
     def parse(self, s, filename="<code>", mode="exec", debug_level=0):
-        """Returns an abstract syntax tree of xonsh code.
+        """Returns an abstract syntax tree of xonsh code. Unlike the
+        normal xonsh parser, this also returns additional information about
+        the file being parsed.
 
         Parameters
         ----------
@@ -155,16 +104,11 @@ class Parser(XonshParser):
         Returns
         -------
         tree : AST
+            Normal xonsh AST, as returned by the xonsh parser
+        comments : list of Comment
+            A list of xonsh comment instances.
         """
-        with swaplexer(), swapcomments(self):
-            tree = super().parse(s, filename=filename, mode=mode, debug_level=debug_level)
-            tree.comments = comments
-        return tree
+        with swaplexer() as comments:
+            tree = self.parser.parse(s, filename=filename, mode=mode, debug_level=debug_level)
+        return tree, comments
 
-    def p_comment(self, p):
-        """comment : comment_tok"""
-        # it is important that this isn't pushed onto the parser stack!
-        # don't assign to p[0]!
-        p1 = p[1]
-        c = Comment(s=p1.value, lineno=p1.lineno, col_offset=p1.lexpos)
-        self.comments.append(c)
