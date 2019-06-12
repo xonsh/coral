@@ -5,7 +5,7 @@ import pytest
 
 from xonsh.ast import pprint_ast, Module, Expr, Expression, NameConstant
 
-from coral.parser import Comment, parse
+from coral.parser import Comment, NodeWithComment, parse, add_comments
 
 
 def nodes_equal(x, y):
@@ -39,38 +39,63 @@ def nodes_equal(x, y):
     return True
 
 
-def test_only_comment():
+#
+# parse tests
+#
+
+
+def test_parse_only_comment():
     tree, comments = parse("# I'm a comment\n")
     assert tree is None
     assert comments == [Comment(s="# I'm a comment", lineno=1, col_offset=0)]
 
 
-def test_twoline_comment():
+def test_parse_twoline_comment():
     tree, comments = parse("True  \n# I'm a comment\n", debug_level=0)
-    exp = Module(
-        body=[
-            Expr(
-                value=NameConstant(value=True),
-                lineno=1,
-                col_offset=0,
-            )
-        ]
-    )
+    exp = Module(body=[Expr(value=NameConstant(value=True), lineno=1, col_offset=0)])
     assert nodes_equal(tree, exp)
     assert comments == [Comment(s="# I'm a comment", lineno=2, col_offset=0)]
 
 
-def test_inline_comment():
+def test_parse_inline_comment():
     tree, comments = parse("True  # I'm a comment\n", debug_level=0)
+    exp = Module(body=[Expr(value=NameConstant(value=True), lineno=1, col_offset=0)])
+    assert nodes_equal(tree, exp)
+    assert comments == [Comment(s="# I'm a comment", lineno=1, col_offset=6)]
+
+
+#
+# add_comments() tests
+#
+
+
+def test_add_only_comment():
+    tree, comments = parse("# I'm a comment\n")
+    tree = add_comments(tree, comments)
+    assert tree is None
+    # assert comments == [Comment(s="# I'm a comment", lineno=1, col_offset=0)]
+
+
+def test_add_twoline_comment():
+    tree, comments = parse("True  \n# I'm a comment\n", debug_level=0)
+    tree = add_comments(tree, comments)
+    exp = Module(body=[Expr(value=NameConstant(value=True), lineno=1, col_offset=0)])
+    assert nodes_equal(tree, exp)
+    # assert comments == [Comment(s="# I'm a comment", lineno=2, col_offset=0)]
+
+
+def test_add_inline_comment():
+    tree, comments = parse("True  # I'm a comment\n", debug_level=0)
+    tree = add_comments(tree, comments)
     exp = Module(
         body=[
-            Expr(
-                value=NameConstant(value=True),
+            NodeWithComment(
+                node=Expr(value=NameConstant(value=True), lineno=1, col_offset=0),
+                comment=Comment(s="# I'm a comment", lineno=1, col_offset=6),
                 lineno=1,
                 col_offset=0,
             )
         ]
     )
     assert nodes_equal(tree, exp)
-    assert comments == [Comment(s="# I'm a comment", lineno=1, col_offset=6)]
-
+    # assert comments == [Comment(s="# I'm a comment", lineno=1, col_offset=6)]

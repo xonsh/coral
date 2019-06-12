@@ -1,7 +1,7 @@
 """A custom parser and AST for analyzing xonsh code."""
 import os
 import builtins
-from ast import AST
+from ast import AST, NodeTransformer
 from contextlib import contextmanager
 
 from xonsh import lexer
@@ -23,6 +23,17 @@ class Comment(AST):
 
     def __repr__(self):
         return "Comment(s={self.s!r}, lineno={self.lineno}, col_offset={self.col_offset})".format(self=self)
+
+
+class NodeWithComment(AST):
+    _attributes = ('lineno', 'col_offset')
+    _fields = ('node', 'comment')
+
+    def __eq__(self, other):
+        return self.node == other.node and self.comment == other.comment and self.lineno == other.lineno and self.col_offset == other.col_offset
+
+    def __repr__(self):
+        return "NodeWithComment(node={self.node!r}, comment={self.comment!r}, lineno={self.lineno}, col_offset={self.col_offset})".format(self=self)
 
 
 #
@@ -90,3 +101,38 @@ def parse(s, ctx=None, filename="<code>", mode="exec", debug_level=0):
         tree = execer.parse(s, ctx, filename=filename, mode=mode,)
     return tree, comments
 
+#
+# commented tree
+#
+
+class CommentAdder(NodeTransformer):
+    """Transformer for adding comment nodes to a tree"""
+
+    def __init__(self, comments):
+        self._comments = list(reversed(comments))
+        self._next_comment = self._comments.pop() if self._comments else None
+
+    def generic_visit(self, node):
+        if self._next_comment is None:
+            return node
+        elif self._next_comment.lineno == node.lineno:
+            new_node = NodeWithComment(node=node, comment=self._next_comment,
+                                       lineno=node.lineno, col_offset=node.col_offset)
+            self._next_comment = self._comments.pop() if self._comments else None
+            self.visit(node)
+            return new_node
+        else:
+            return node
+
+    def visit_Module(self, node):
+        # ast.Module does not have a lineno attr
+        for i, n in enumerate(node.body):
+            node.body[i] = self.visit(n)
+        return node
+
+
+def add_comments(tree, comments):
+    """Adds comment nodes to a tree"""
+    adder = CommentAdder(comments)
+    new_tree = adder.visit(tree)
+    return tree
