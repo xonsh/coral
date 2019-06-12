@@ -105,14 +105,29 @@ def parse(s, ctx=None, filename="<code>", mode="exec", debug_level=0):
 # commented tree
 #
 
+def merge_body_comments(body, comments):
+    """Takes a body (list of nodes) and adds in comments
+    that appear at the root level of the body. This operates in-place
+    """
+    i = 0
+    while comments and i < len(body):
+        if comments[0].lineno < body[i].lineno:
+            body.insert(i, comments.pop(0))
+        i += 1
+    body.extend(comments)
+
+
 class CommentAdder(NodeTransformer):
     """Transformer for adding comment nodes to a tree"""
 
     def __init__(self, comments):
         self._comments = list(reversed(comments))
         self._next_comment = self._comments.pop() if self._comments else None
+        # this is a list of lists of comments, representing the stack
+        self._comments_in_body = []
 
     def generic_visit(self, node):
+        # first handle some early exits
         if self._next_comment is None:
             return node
         elif node is None:
@@ -123,19 +138,39 @@ class CommentAdder(NodeTransformer):
             self._comments.clear()
             new_node = Module(body=comments)
             return new_node
-        elif self._next_comment.lineno == node.lineno:
+
+        # grab prior body comments
+        while self._next_comment is not None and self._next_comment.lineno < node.lineno:
+            self._comments_in_body[-1].append(self._next_comment)
+            self._next_comment = self._comments.pop() if self._comments else None
+        if self._next_comment is None:
+            # can early exit again.
+            return node
+
+        # attach comments to current node or continue
+        if self._next_comment.lineno == node.lineno:
             new_node = NodeWithComment(node=node, comment=self._next_comment,
                                        lineno=node.lineno, col_offset=node.col_offset)
             self._next_comment = self._comments.pop() if self._comments else None
-            self.visit(node)
-            return new_node
         else:
-            return node
+            new_node = node
+
+        if hasattr(node, 'body'):
+            self._comments_in_body.append([])
+            for i, n in enumerate(node.body):
+                node.body[i] = self.visit(n)
+            merge_body_comments(node.body, self._comments_in_body.pop())
+        elif node is not new_node:
+            self.visit(node)
+        return new_node
+
 
     def visit_Module(self, node):
         # ast.Module does not have a lineno attr
+        self._comments_in_body.append([])
         for i, n in enumerate(node.body):
             node.body[i] = self.visit(n)
+        merge_body_comments(node.body, self._comments_in_body.pop())
         # if there are any remaining comments, add them to the end
         if self._next_comment is not None:
             node.body.append(self._next_comment)
