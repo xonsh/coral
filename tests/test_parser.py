@@ -39,15 +39,13 @@ def nodes_equal(x, y):
     return True
 
 
-#def test_comment(parser):
-def test_comment():
+def test_only_comment():
     tree, comments = parse("# I'm a comment\n")
     assert tree is None
     assert comments == [Comment(s="# I'm a comment", lineno=1, col_offset=0)]
 
 
-#def test_inline_comment(parser):
-def test_inline_comment():
+def test_twoline_comment():
     tree, comments = parse("True  \n# I'm a comment\n", debug_level=0)
     exp = Module(
         body=[
@@ -60,3 +58,19 @@ def test_inline_comment():
     )
     assert nodes_equal(tree, exp)
     assert comments == [Comment(s="# I'm a comment", lineno=2, col_offset=0)]
+
+
+def test_inline_comment():
+    tree, comments = parse("True  # I'm a comment\n", debug_level=0)
+    exp = Module(
+        body=[
+            Expr(
+                value=NameConstant(value=True),
+                lineno=1,
+                col_offset=0,
+            )
+        ]
+    )
+    assert nodes_equal(tree, exp)
+    assert comments == [Comment(s="# I'm a comment", lineno=1, col_offset=6)]
+

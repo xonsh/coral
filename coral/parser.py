@@ -14,11 +14,6 @@ from xonsh.execer import Execer
 # AST Nodes
 #
 
-class Errortoken(AST):
-    _attributes = ('lineno', 'col_offset')
-    _fields = ('token')
-
-
 class Comment(AST):
     _attributes = ('lineno', 'col_offset')
     _fields = ('s')
@@ -31,17 +26,8 @@ class Comment(AST):
 
 
 #
-# Lexer tools
+# Execution tools
 #
-
-def _new_token(type, value, lineno, lexpos):
-    o = LexToken()
-    o.type = type
-    o.value = value
-    o.lineno = lineno
-    o.lexpos = lexpos
-    return o
-
 
 @contextmanager
 def swapexec(debug_level):
