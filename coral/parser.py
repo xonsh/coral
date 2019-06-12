@@ -1,7 +1,7 @@
 """A custom parser and AST for analyzing xonsh code."""
 import os
 import builtins
-from ast import AST, NodeTransformer
+from ast import AST, NodeTransformer, Module
 from contextlib import contextmanager
 
 from xonsh import lexer
@@ -115,6 +115,14 @@ class CommentAdder(NodeTransformer):
     def generic_visit(self, node):
         if self._next_comment is None:
             return node
+        elif node is None:
+            # this can happen if the module contains nothing but comments
+            comments = [self._next_comment]
+            self._next_comment = None
+            comments.extend(reversed(self._comments))
+            self._comments.clear()
+            new_node = Module(body=comments)
+            return new_node
         elif self._next_comment.lineno == node.lineno:
             new_node = NodeWithComment(node=node, comment=self._next_comment,
                                        lineno=node.lineno, col_offset=node.col_offset)
@@ -128,6 +136,13 @@ class CommentAdder(NodeTransformer):
         # ast.Module does not have a lineno attr
         for i, n in enumerate(node.body):
             node.body[i] = self.visit(n)
+        # if there are any remaining comments, add them to the end
+        if self._next_comment is not None:
+            node.body.append(self._next_comment)
+            self._next_comment = None
+        if self._comments:
+            node.body.extend(reversed(self._comments))
+            self._comments.clear()
         return node
 
 
@@ -135,4 +150,4 @@ def add_comments(tree, comments):
     """Adds comment nodes to a tree"""
     adder = CommentAdder(comments)
     new_tree = adder.visit(tree)
-    return tree
+    return new_tree
