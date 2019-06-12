@@ -92,7 +92,7 @@ def main():
         package_data={
             "coral": ["*.xsh"],
         },
-        cmdclass=cmdclass,
+        #cmdclass=cmdclass,
         scripts=scripts,
     )
     skw["python_requires"] = ">=3.5"

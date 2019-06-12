@@ -1,5 +1,6 @@
 """A custom parser and AST for analyzing xonsh code."""
 import os
+import builtins
 from ast import AST
 from contextlib import contextmanager
 
@@ -22,6 +23,12 @@ class Comment(AST):
     _attributes = ('lineno', 'col_offset')
     _fields = ('s')
 
+    def __eq__(self, other):
+        return self.s == other.s and self.lineno == other.lineno and self.col_offset == other.col_offset
+
+    def __repr__(self):
+        return "Comment(s={self.s!r}, lineno={self.lineno}, col_offset={self.col_offset})".format(self=self)
+
 
 #
 # Lexer tools
@@ -37,8 +44,10 @@ def _new_token(type, value, lineno, lexpos):
 
 
 @contextmanager
-def swaplexer(comments):
+def swapexec(debug_level):
     """Performs some global lexer context switching"""
+    execer = builtins.__xonsh__.execer
+    orig_debug_level, execer.debug_level = execer.debug_level, debug_level
     comments = []
 
     def handle_comment(state, token):
@@ -55,7 +64,8 @@ def swaplexer(comments):
         #ENDMARKER: handle_indentity,
         }
     lexer.special_handlers.update(shnew)
-    yield comments
+    yield (execer, comments)
+    execer.debug_level = orig_debug_level
     lexer.special_handlers.clear()
     lexer.special_handlers.update(shold)
 
@@ -65,50 +75,32 @@ def swaplexer(comments):
 # Parser tools
 #
 
+def parse(s, ctx=None, filename="<code>", mode="exec", debug_level=0):
+    """Returns an abstract syntax tree of xonsh code. Unlike the
+    normal xonsh parser, this also returns additional information about
+    the file being parsed.
 
-class Parser:
-    """Custom parser that is suited to static code analysis because
-    it does not throw away unused tokens. This makes the job of
-    rewriting code much easier.
+    Parameters
+    ----------
+    s : str
+        The xonsh code.
+    ctx : dict, optional
+        Execution context to evaluate within
+    filename : str, optional
+        Name of the file.
+    mode : str, optional
+        Execution mode, one of: exec, eval, or single.
+    debug_level : str, optional
+        Debugging level passed down to yacc.
+
+    Returns
+    -------
+    tree : AST
+        Normal xonsh AST, as returned by the xonsh parser
+    comments : list of Comment
+        A list of xonsh comment instances.
     """
-
-    def __init__(
-        self,
-    ):
-        self.execer = Execer()
-
-    @property
-    def lexer(self):
-        return self.execer.parser.lexer
-
-    @property
-    def parser(self):
-        return self.execer.parser
-
-    def parse(self, s, filename="<code>", mode="exec", debug_level=0):
-        """Returns an abstract syntax tree of xonsh code. Unlike the
-        normal xonsh parser, this also returns additional information about
-        the file being parsed.
-
-        Parameters
-        ----------
-        s : str
-            The xonsh code.
-        filename : str, optional
-            Name of the file.
-        mode : str, optional
-            Execution mode, one of: exec, eval, or single.
-        debug_level : str, optional
-            Debugging level passed down to yacc.
-
-        Returns
-        -------
-        tree : AST
-            Normal xonsh AST, as returned by the xonsh parser
-        comments : list of Comment
-            A list of xonsh comment instances.
-        """
-        with swaplexer() as comments:
-            tree = self.parser.parse(s, filename=filename, mode=mode, debug_level=debug_level)
-        return tree, comments
+    with swapexec(debug_level) as (execer, comments):
+        tree = execer.parse(s, ctx, filename=filename, mode=mode,)
+    return tree, comments
 

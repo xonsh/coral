@@ -3,14 +3,9 @@ import ast
 
 import pytest
 
-from xonsh.ast import pprint_ast, Module, Expr, Expression
+from xonsh.ast import pprint_ast, Module, Expr, Expression, NameConstant
 
-from coral.parser import Parser, Comment
-
-
-@pytest.fixture(scope="module")
-def parser():
-    return Parser()
+from coral.parser import Comment, parse
 
 
 def nodes_equal(x, y):
@@ -44,29 +39,24 @@ def nodes_equal(x, y):
     return True
 
 
-def test_comment(parser):
-    obs = parser.parse("# I'm a comment\n")
+#def test_comment(parser):
+def test_comment():
+    tree, comments = parse("# I'm a comment\n")
+    assert tree is None
+    assert comments == [Comment(s="# I'm a comment", lineno=1, col_offset=0)]
+
+
+#def test_inline_comment(parser):
+def test_inline_comment():
+    tree, comments = parse("True  \n# I'm a comment\n", debug_level=0)
     exp = Module(
         body=[
             Expr(
-                value=Comment(s="# I'm a comment", lineno=1, col_offset=0),
+                value=NameConstant(value=True),
                 lineno=1,
                 col_offset=0,
             )
         ]
     )
-    assert nodes_equal(obs, exp)
-
-
-def test_inline_comment(parser):
-    obs = parser.parse("True  \n# I'm a comment\n", debug_level=0)
-    exp = Module(
-        body=[
-            Expr(
-                value=Comment(s="# I'm a comment", lineno=1, col_offset=0),
-                lineno=1,
-                col_offset=0,
-            )
-        ]
-    )
-    assert nodes_equal(obs, exp)
+    assert nodes_equal(tree, exp)
+    assert comments == [Comment(s="# I'm a comment", lineno=2, col_offset=0)]
