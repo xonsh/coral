@@ -159,6 +159,10 @@ class CommentAdder(NodeTransformer):
             self._comments_in_body.append([])
             for i, n in enumerate(node.body):
                 node.body[i] = self.visit(n)
+            # grab trainling body comments
+            while self._next_comment is not None and self._next_comment.col_offset >= n.col_offset:
+                self._comments_in_body[-1].append(self._next_comment)
+                self._next_comment = self._comments.pop() if self._comments else None
             merge_body_comments(node.body, self._comments_in_body.pop())
         elif node is not new_node:
             self.visit(node)

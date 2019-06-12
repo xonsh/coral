@@ -5,7 +5,16 @@ from itertools import zip_longest
 
 import pytest
 
-from xonsh.ast import pdump, pprint_ast, Module, Expr, Expression, NameConstant
+from xonsh.ast import (
+    pdump,
+    pprint_ast,
+    Module,
+    Expr,
+    Expression,
+    NameConstant,
+    FunctionDef,
+    arguments,
+)
 
 from coral.parser import Comment, NodeWithComment, parse, add_comments
 
@@ -72,6 +81,7 @@ def test_parse_inline_comment():
 # add_comments() tests
 #
 
+
 def check_add_comments(code, exp_tree, debug_level=0):
     code = dedent(code).lstrip()
     tree, comments = parse(code, debug_level=debug_level)
@@ -79,7 +89,7 @@ def check_add_comments(code, exp_tree, debug_level=0):
     try:
         assert nodes_equal(tree, exp_tree)
     except AssertionError:
-        pprint_ast(tree)
+        pprint_ast(tree, include_attributes=True)
         raise
     return tree
 
@@ -92,7 +102,12 @@ def test_add_only_comment():
 
 def test_add_twoline_comment():
     code = "True  \n# I'm a comment\n"
-    exp = Module(body=[Expr(value=NameConstant(value=True), lineno=1, col_offset=0), Comment(s="# I'm a comment", lineno=2, col_offset=0)])
+    exp = Module(
+        body=[
+            Expr(value=NameConstant(value=True), lineno=1, col_offset=0),
+            Comment(s="# I'm a comment", lineno=2, col_offset=0),
+        ]
+    )
     check_add_comments(code, exp)
 
 
@@ -124,13 +139,40 @@ def test_add_inline_comment_func():
         body=[
             Comment(s="# comment 1", lineno=1, col_offset=0),
             NodeWithComment(
-                node=Expr(value=NameConstant(value=True), lineno=1, col_offset=0),
-                comment=Comment(s="# I'm a comment", lineno=1, col_offset=6),
-                lineno=1,
+                node=FunctionDef(
+                    name="func",
+                    args=arguments(
+                        args=[],
+                        vararg=None,
+                        kwonlyargs=[],
+                        kw_defaults=[],
+                        kwarg=None,
+                        defaults=[],
+                    ),
+                    body=[
+                        Comment(s="# comment 3", lineno=3, col_offset=4),
+                        NodeWithComment(
+                            node=Expr(
+                                value=NameConstant(value=True, lineno=4, col_offset=4),
+                                lineno=4,
+                                col_offset=4,
+                            ),
+                            comment=Comment(s="# comment 4", lineno=4, col_offset=10),
+                            lineno=4,
+                            col_offset=4,
+                        ),
+                        Comment(s="# comment 5", lineno=5, col_offset=4),
+                    ],
+                    decorator_list=[],
+                    returns=None,
+                    lineno=2,
+                    col_offset=0,
+                ),
+                comment=Comment(s="# comment 2", lineno=2, col_offset=13),
+                lineno=2,
                 col_offset=0,
             ),
-            Comment(s="# comment 6", lineno=7, col_offset=0),
+            Comment(s="# comment 6", lineno=6, col_offset=0),
         ]
     )
     check_add_comments(code, exp)
-
