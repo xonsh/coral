@@ -176,3 +176,65 @@ def test_add_inline_comment_func():
         ]
     )
     check_add_comments(code, exp)
+
+
+def test_add_inline_comment_class():
+    code = """
+    # comment 1
+    class Class:  # comment 2
+        # comment 3
+        '''
+        # not a comment
+        '''
+
+        # comment 4
+        x = True  # comment 5
+        # comment 6
+
+    # comment 7
+    """
+    exp = Module(
+        body=[
+            Comment(s="# comment 1", lineno=1, col_offset=0),
+            NodeWithComment(
+                node=ClassDef(
+                    name="Class",
+                    bases=[],
+                    keywords=[],
+                    body=[
+                        Comment(s="# comment 3", lineno=3, col_offset=4),
+                        Expr(
+                            value=Str(
+                                s="\n    # not a comment\n    ", lineno=4, col_offset=4
+                            ),
+                            lineno=4,
+                            col_offset=4,
+                        ),
+                        Comment(s="# comment 4", lineno=8, col_offset=4),
+                        NodeWithComment(
+                            node=Assign(
+                                targets=[
+                                    Name(id="x", ctx=Store(), lineno=9, col_offset=4)
+                                ],
+                                value=NameConstant(value=True, lineno=9, col_offset=8),
+                                lineno=9,
+                                col_offset=4,
+                            ),
+                            comment=Comment(s="# comment 5", lineno=9, col_offset=14),
+                            lineno=9,
+                            col_offset=4,
+                        ),
+                        Comment(s="# comment 6", lineno=10, col_offset=4),
+                    ],
+                    decorator_list=[],
+                    lineno=2,
+                    col_offset=0,
+                ),
+                comment=Comment(s="# comment 2", lineno=2, col_offset=14),
+                lineno=2,
+                col_offset=0,
+            ),
+            Comment(s="# comment 7", lineno=12, col_offset=0),
+        ]
+    )
+    check_add_comments(code, exp)
