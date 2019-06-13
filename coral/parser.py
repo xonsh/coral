@@ -126,6 +126,16 @@ class CommentAdder(NodeTransformer):
         # this is a list of lists of comments, representing the stack
         self._comments_in_body = []
 
+    def _attach_comment(self, node):
+        # attach comments to current node or continue
+        if self._next_comment.lineno == node.lineno:
+            new_node = NodeWithComment(node=node, comment=self._next_comment,
+                                       lineno=node.lineno, col_offset=node.col_offset)
+            self._next_comment = self._comments.pop() if self._comments else None
+        else:
+            new_node = node
+        return new_node
+
     def generic_visit(self, node):
         # first handle some early exits
         if self._next_comment is None:
@@ -147,14 +157,7 @@ class CommentAdder(NodeTransformer):
             # can early exit again.
             return node
 
-        # attach comments to current node or continue
-        if self._next_comment.lineno == node.lineno:
-            new_node = NodeWithComment(node=node, comment=self._next_comment,
-                                       lineno=node.lineno, col_offset=node.col_offset)
-            self._next_comment = self._comments.pop() if self._comments else None
-        else:
-            new_node = node
-
+        new_node = self._attach_comment(node)
         if hasattr(node, 'body'):
             self._comments_in_body.append([])
             for i, n in enumerate(node.body):
@@ -168,6 +171,10 @@ class CommentAdder(NodeTransformer):
             self.visit(node)
         return new_node
 
+    def visit_If(self, node):
+        # we have to scan body and orelse separately for comments
+        new_node = self._attach_comment(node)
+        return new_node
 
     def visit_Module(self, node):
         # ast.Module does not have a lineno attr
