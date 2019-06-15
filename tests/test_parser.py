@@ -65,20 +65,20 @@ def nodes_equal(x, y):
 
 
 def test_parse_only_comment():
-    tree, comments = parse("# I'm a comment\n")
+    tree, lines, comments = parse("# I'm a comment\n")
     assert tree is None
     assert comments == [Comment(s="# I'm a comment", lineno=1, col_offset=0)]
 
 
 def test_parse_twoline_comment():
-    tree, comments = parse("True  \n# I'm a comment\n", debug_level=0)
+    tree, lines, comments = parse("True  \n# I'm a comment\n", debug_level=0)
     exp = Module(body=[Expr(value=NameConstant(value=True), lineno=1, col_offset=0)])
     assert nodes_equal(tree, exp)
     assert comments == [Comment(s="# I'm a comment", lineno=2, col_offset=0)]
 
 
 def test_parse_inline_comment():
-    tree, comments = parse("True  # I'm a comment\n", debug_level=0)
+    tree, lines, comments = parse("True  # I'm a comment\n", debug_level=0)
     exp = Module(body=[Expr(value=NameConstant(value=True), lineno=1, col_offset=0)])
     assert nodes_equal(tree, exp)
     assert comments == [Comment(s="# I'm a comment", lineno=1, col_offset=6)]
@@ -91,7 +91,7 @@ def test_parse_inline_comment():
 
 def check_add_comments(code, exp_tree, debug_level=0):
     code = dedent(code).lstrip()
-    tree, comments = parse(code, debug_level=debug_level)
+    tree, lines, comments = parse(code, debug_level=debug_level)
     tree = add_comments(tree, comments)
     try:
         assert nodes_equal(tree, exp_tree)

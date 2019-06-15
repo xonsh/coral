@@ -79,12 +79,14 @@ def swapexec(debug_level):
     """Performs some global lexer context switching"""
     execer = builtins.__xonsh__.execer
     orig_debug_level, execer.debug_level = execer.debug_level, debug_level
+    lines = {}
     comments = []
 
     def handle_comment(state, token):
         comment = Comment(
             s=token.string, lineno=token.start[0], col_offset=token.start[1]
         )
+        lines[token.start[0]] = token.line
         comments.append(comment)
         yield from []
 
@@ -96,7 +98,7 @@ def swapexec(debug_level):
         # ENDMARKER: handle_indentity,
     }
     lexer.special_handlers.update(shnew)
-    yield (execer, comments)
+    yield (execer, lines, comments)
     execer.debug_level = orig_debug_level
     lexer.special_handlers.clear()
     lexer.special_handlers.update(shold)
@@ -129,12 +131,14 @@ def parse(s, ctx=None, filename="<code>", mode="exec", debug_level=0):
     -------
     tree : AST
         Normal xonsh AST, as returned by the xonsh parser
+    lines : dict
+        Maps line numbers to string lines
     comments : list of Comment
         A list of xonsh comment instances.
     """
-    with swapexec(debug_level) as (execer, comments):
+    with swapexec(debug_level) as (execer, lines, comments):
         tree = execer.parse(s, ctx, filename=filename, mode=mode)
-    return tree, comments
+    return tree, lines, comments
 
 
 #
@@ -157,7 +161,8 @@ def merge_body_comments(body, comments):
 class CommentAdder(NodeTransformer):
     """Transformer for adding comment nodes to a tree"""
 
-    def __init__(self, comments):
+    def __init__(self, comments, lines=None):
+        self.lines = {} if lines is None else lines
         self._comments = list(reversed(comments))
         self._next_comment = self._comments.pop() if self._comments else None
         # this is a list of lists of comments, representing the stack
@@ -235,6 +240,8 @@ class CommentAdder(NodeTransformer):
         for i, n in enumerate(node.body):
             node.body[i] = self.visit(n)
             # grab trainling body comments
+        # figure out if the else-clause exists and if it is an actual "else"
+        # rather than an "elif"
         orelse0 = node.orelse[0] if len(node.orelse) > 0 else None
         orelse0_iselse = orelse0 is not None and not isinstance(orelse0, If)
         print(orelse0, type(orelse0), orelse0_iselse, new_node.col_offset)
@@ -281,8 +288,8 @@ class CommentAdder(NodeTransformer):
         return node
 
 
-def add_comments(tree, comments):
+def add_comments(tree, comments, lines=None):
     """Adds comment nodes to a tree"""
-    adder = CommentAdder(comments)
+    adder = CommentAdder(comments, lines=lines)
     new_tree = adder.visit(tree)
     return new_tree
