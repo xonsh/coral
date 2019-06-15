@@ -136,6 +136,11 @@ class CommentAdder(NodeTransformer):
             new_node = node
         return new_node
 
+    def _grab_prior_body_comments(self, node):
+        while self._next_comment is not None and self._next_comment.lineno < node.lineno:
+            self._comments_in_body[-1].append(self._next_comment)
+            self._next_comment = self._comments.pop() if self._comments else None
+
     def generic_visit(self, node):
         # first handle some early exits
         if self._next_comment is None:
@@ -150,11 +155,9 @@ class CommentAdder(NodeTransformer):
             return new_node
 
         # grab prior body comments
-        while self._next_comment is not None and self._next_comment.lineno < node.lineno:
-            self._comments_in_body[-1].append(self._next_comment)
-            self._next_comment = self._comments.pop() if self._comments else None
+        self._grab_prior_body_comments(node)
         if self._next_comment is None:
-            # can early exit again.
+            # can early exit again
             return node
 
         new_node = self._attach_comment(node)
@@ -173,7 +176,30 @@ class CommentAdder(NodeTransformer):
 
     def visit_If(self, node):
         # we have to scan body and orelse separately for comments
+        self._grab_prior_body_comments(node)
+        if self._next_comment is None:
+            # can early exit again
+            return node
+
         new_node = self._attach_comment(node)
+        # go through body
+        self._comments_in_body.append([])
+        for i, n in enumerate(node.body):
+            node.body[i] = self.visit(n)
+            # grab trainling body comments
+        while self._next_comment is not None and self._next_comment.col_offset >= n.col_offset:
+            self._comments_in_body[-1].append(self._next_comment)
+            self._next_comment = self._comments.pop() if self._comments else None
+        merge_body_comments(node.body, self._comments_in_body.pop())
+        # go through orelse
+        self._comments_in_body.append([])
+        for i, n in enumerate(node.orelse):
+            node.orelse[i] = self.visit(n)
+            # grab trainling body comments
+        while self._next_comment is not None and self._next_comment.col_offset >= n.col_offset:
+            self._comments_in_body[-1].append(self._next_comment)
+            self._next_comment = self._comments.pop() if self._comments else None
+        merge_body_comments(node.orelse, self._comments_in_body.pop())
         return new_node
 
     def visit_Module(self, node):

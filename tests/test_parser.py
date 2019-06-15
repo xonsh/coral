@@ -18,6 +18,8 @@ from xonsh.ast import (
     If,
     Assign,
     Name,
+    Store,
+    Num,
 )
 
 from coral.parser import Comment, NodeWithComment, parse, add_comments
