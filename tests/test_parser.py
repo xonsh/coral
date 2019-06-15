@@ -20,9 +20,10 @@ from xonsh.ast import (
     Name,
     Store,
     Num,
+    Str,
 )
 
-from coral.parser import Comment, NodeWithComment, parse, add_comments
+from coral.parser import Comment, NodeWithComment, IfWithComments, parse, add_comments
 
 
 def nodes_equal(x, y):
@@ -246,7 +247,56 @@ def test_add_inline_comment_class():
     check_add_comments(code, exp)
 
 
-def test_add_inline_comment_if():
+def test_add_inline_comment_if_else():
+    code = """
+    # comment 1
+    if True:  # comment 2
+        # comment 3
+        x = 1  # comment 4
+        # comment 5
+    else: # comment 6
+        # comment 7
+        x = 4  # comment 8
+        # comment 9
+    # comment 10
+    """
+    exp = Module(
+        body=[
+            Comment(s="# comment 1"),
+            IfWithComments(
+                node=If(
+                    test=NameConstant(value=True),
+                    body=[
+                        Comment(s="# comment 3"),
+                        NodeWithComment(
+                            node=Assign(
+                                targets=[Name(id="x", ctx=Store())], value=Num(n=1)
+                            ),
+                            comment=Comment(s="# comment 4"),
+                        ),
+                        Comment(s="# comment 5"),
+                    ],
+                    orelse=[
+                        Comment(s="# comment 7"),
+                        NodeWithComment(
+                            node=Assign(
+                                targets=[Name(id="x", ctx=Store())], value=Num(n=4)
+                            ),
+                            comment=Comment(s="# comment 8"),
+                        ),
+                        Comment(s="# comment 9"),
+                    ],
+                ),
+                comment=Comment(s="# comment 2"),
+                elsecomment=Comment(s="# comment 6"),
+            ),
+            Comment(s="# comment 10"),
+        ]
+    )
+    check_add_comments(code, exp)
+
+
+def test_add_inline_comment_elif():
     code = """
     # comment 1
     if True:  # comment 2
