@@ -65,20 +65,20 @@ def nodes_equal(x, y):
 
 
 def test_parse_only_comment():
-    tree, lines, comments = parse("# I'm a comment\n")
+    tree, comments, lines = parse("# I'm a comment\n")
     assert tree is None
     assert comments == [Comment(s="# I'm a comment", lineno=1, col_offset=0)]
 
 
 def test_parse_twoline_comment():
-    tree, lines, comments = parse("True  \n# I'm a comment\n", debug_level=0)
+    tree, comments, lines = parse("True  \n# I'm a comment\n", debug_level=0)
     exp = Module(body=[Expr(value=NameConstant(value=True), lineno=1, col_offset=0)])
     assert nodes_equal(tree, exp)
     assert comments == [Comment(s="# I'm a comment", lineno=2, col_offset=0)]
 
 
 def test_parse_inline_comment():
-    tree, lines, comments = parse("True  # I'm a comment\n", debug_level=0)
+    tree, comments, lines = parse("True  # I'm a comment\n", debug_level=0)
     exp = Module(body=[Expr(value=NameConstant(value=True), lineno=1, col_offset=0)])
     assert nodes_equal(tree, exp)
     assert comments == [Comment(s="# I'm a comment", lineno=1, col_offset=6)]
@@ -91,8 +91,8 @@ def test_parse_inline_comment():
 
 def check_add_comments(code, exp_tree, debug_level=0):
     code = dedent(code).lstrip()
-    tree, lines, comments = parse(code, debug_level=debug_level)
-    tree = add_comments(tree, comments)
+    tree, comments, lines = parse(code, debug_level=debug_level)
+    tree = add_comments(tree, comments, lines)
     try:
         assert nodes_equal(tree, exp_tree)
     except AssertionError:
@@ -320,7 +320,7 @@ def test_add_inline_comment_elif():
     exp = Module(
         body=[
             Comment(s="# comment 1", lineno=1, col_offset=0),
-            NodeWithComment(
+            IfWithComments(
                 node=If(
                     test=NameConstant(value=True, lineno=2, col_offset=3),
                     body=[
@@ -341,59 +341,129 @@ def test_add_inline_comment_elif():
                         Comment(s="# comment 5", lineno=5, col_offset=4),
                     ],
                     orelse=[
-                        If(
-                            test=NameConstant(value=True, lineno=6, col_offset=5),
-                            body=[
-                                Assign(
-                                    targets=[
-                                        Name(
-                                            id="x", ctx=Store(), lineno=8, col_offset=4
-                                        )
-                                    ],
-                                    value=Num(n=2, lineno=8, col_offset=8),
-                                    lineno=8,
-                                    col_offset=4,
-                                )
-                            ],
-                            orelse=[
-                                If(
-                                    test=NameConstant(
-                                        value=False, lineno=10, col_offset=5
-                                    ),
-                                    body=[
-                                        Assign(
+                        IfWithComments(
+                            node=If(
+                                test=NameConstant(value=True, lineno=6, col_offset=5),
+                                body=[
+                                    Comment(s="# comment 7", lineno=7, col_offset=4),
+                                    NodeWithComment(
+                                        node=Assign(
                                             targets=[
                                                 Name(
                                                     id="x",
                                                     ctx=Store(),
+                                                    lineno=8,
+                                                    col_offset=4,
+                                                )
+                                            ],
+                                            value=Num(n=2, lineno=8, col_offset=8),
+                                            lineno=8,
+                                            col_offset=4,
+                                        ),
+                                        comment=Comment(
+                                            s="# comment 8", lineno=8, col_offset=11
+                                        ),
+                                        lineno=8,
+                                        col_offset=4,
+                                    ),
+                                    Comment(s="# comment 9", lineno=9, col_offset=4),
+                                ],
+                                orelse=[
+                                    IfWithComments(
+                                        node=If(
+                                            test=NameConstant(
+                                                value=False, lineno=10, col_offset=5
+                                            ),
+                                            body=[
+                                                Comment(
+                                                    s="# comment 11",
+                                                    lineno=11,
+                                                    col_offset=4,
+                                                ),
+                                                NodeWithComment(
+                                                    node=Assign(
+                                                        targets=[
+                                                            Name(
+                                                                id="x",
+                                                                ctx=Store(),
+                                                                lineno=12,
+                                                                col_offset=4,
+                                                            )
+                                                        ],
+                                                        value=Num(
+                                                            n=3, lineno=12, col_offset=8
+                                                        ),
+                                                        lineno=12,
+                                                        col_offset=4,
+                                                    ),
+                                                    comment=Comment(
+                                                        s="# comment 12",
+                                                        lineno=12,
+                                                        col_offset=11,
+                                                    ),
                                                     lineno=12,
                                                     col_offset=4,
-                                                )
+                                                ),
+                                                Comment(
+                                                    s="# comment 13",
+                                                    lineno=13,
+                                                    col_offset=4,
+                                                ),
                                             ],
-                                            value=Num(n=3, lineno=12, col_offset=8),
-                                            lineno=12,
-                                            col_offset=4,
-                                        )
-                                    ],
-                                    orelse=[
-                                        Assign(
-                                            targets=[
-                                                Name(
-                                                    id="x",
-                                                    ctx=Store(),
+                                            orelse=[
+                                                Comment(
+                                                    s="# comment 15",
+                                                    lineno=15,
+                                                    col_offset=4,
+                                                ),
+                                                NodeWithComment(
+                                                    node=Assign(
+                                                        targets=[
+                                                            Name(
+                                                                id="x",
+                                                                ctx=Store(),
+                                                                lineno=16,
+                                                                col_offset=4,
+                                                            )
+                                                        ],
+                                                        value=Num(
+                                                            n=4, lineno=16, col_offset=8
+                                                        ),
+                                                        lineno=16,
+                                                        col_offset=4,
+                                                    ),
+                                                    comment=Comment(
+                                                        s="# comment 16",
+                                                        lineno=16,
+                                                        col_offset=11,
+                                                    ),
                                                     lineno=16,
                                                     col_offset=4,
-                                                )
+                                                ),
+                                                Comment(
+                                                    s="# comment 17",
+                                                    lineno=17,
+                                                    col_offset=4,
+                                                ),
                                             ],
-                                            value=Num(n=4, lineno=16, col_offset=8),
-                                            lineno=16,
-                                            col_offset=4,
-                                        )
-                                    ],
-                                    lineno=10,
-                                    col_offset=5,
-                                )
-                            ],
+                                            lineno=10,
+                                            col_offset=5,
+                                        ),
+                                        comment=Comment(
+                                            s="# comment 10", lineno=10, col_offset=12
+                                        ),
+                                        elsecomment=Comment(
+                                            s="# comment 14", lineno=14, col_offset=6
+                                        ),
+                                        lineno=10,
+                                        col_offset=5,
+                                    )
+                                ],
+                                lineno=6,
+                                col_offset=5,
+                            ),
+                            comment=Comment(s="# comment 6", lineno=6, col_offset=11),
+                            elsecomment=None,
                             lineno=6,
                             col_offset=5,
                         )
@@ -402,6 +472,7 @@ def test_add_inline_comment_elif():
                     col_offset=0,
                 ),
                 comment=Comment(s="# comment 2", lineno=2, col_offset=10),
+                elsecomment=None,
                 lineno=2,
                 col_offset=0,
             ),
