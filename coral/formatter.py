@@ -54,6 +54,10 @@ class Formatter(NodeVisitor):
         return s
 
     def visit_Tuple(self, node):
+        if len(node.elts) == 0:
+            return "()"
+        elif len(node.elts) == 1:
+            return "(" + self.visit(node.elts[0]) + ",)"
         s = "("
         new_elts = []
         for elt in node.elts:
@@ -69,6 +73,15 @@ class Formatter(NodeVisitor):
             k = self.visit(key)
             v = self.visit(value)
             new_elts.append(k + ": " + v)
+        s += ", ".join(new_elts)
+        s += "}"
+        return s
+
+    def visit_Set(self, node):
+        s = "{"
+        new_elts = []
+        for elt in node.elts:
+            new_elts.append(self.visit(elt))
         s += ", ".join(new_elts)
         s += "}"
         return s
