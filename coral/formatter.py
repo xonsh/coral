@@ -41,6 +41,8 @@ class Formatter(NodeVisitor):
                 rendered.append("*")
             for arg, default in zip(keywordonly_args, args.kw_defaults):
                 rendered.append(arg.arg + "=" + self.visit(default))
+        if args.kwarg is not None:
+            rendered.append("**" + args.kwarg.arg)
         return ", ".join(rendered)
 
     # visitors

@@ -39,6 +39,11 @@ from tools import nodes_equal
 ("lambda  x, *y: None\n", "lambda x, *y: None\n"),
 ("lambda  x=42,*y: None\n", "lambda x=42, *y: None\n"),
 ("lambda  *y,x=42: None\n", "lambda *y, x=42: None\n"),
+("lambda **kwargs: None\n", "lambda **kwargs: None\n"),
+("lambda *args, **kwargs: None\n", "lambda *args, **kwargs: None\n"),
+("lambda x,*args,**kwargs: None\n", "lambda x, *args, **kwargs: None\n"),
+("lambda x, y=42,*args,**kwargs: None\n", "lambda x, y=42, *args, **kwargs: None\n"),
+("lambda x, y=42,*args, z=43,**kwargs: None\n", "lambda x, y=42, *args, z=43, **kwargs: None\n"),
 ])
 def test_formatting(inp, exp):
     execer =  builtins.__xonsh__.execer
