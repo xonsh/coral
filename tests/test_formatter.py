@@ -28,6 +28,17 @@ from tools import nodes_equal
 ("{  1 :  2}\n", "{1: 2}\n"),
 ("{1:2,3:4,5:6,}\n", "{1: 2, 3: 4, 5: 6}\n"),
 ("{1,2,3,}\n", "{1, 2, 3}\n"),
+("lambda  : None\n", "lambda: None\n"),
+("lambda x : None\n", "lambda x: None\n"),
+("lambda x ,y : None\n", "lambda x, y: None\n"),
+("lambda x = 10 : None\n", "lambda x=10: None\n"),
+("lambda x ,y, z = 10 : None\n", "lambda x, y, z=10: None\n"),
+("lambda x ,y,*, z = 10 : None\n", "lambda x, y, *, z=10: None\n"),
+("lambda x ,y=42,*, z = 10 : None\n", "lambda x, y=42, *, z=10: None\n"),
+("lambda *args: None\n", "lambda *args: None\n"),
+("lambda  x, *y: None\n", "lambda x, *y: None\n"),
+("lambda  x=42,*y: None\n", "lambda x=42, *y: None\n"),
+("lambda  *y,x=42: None\n", "lambda *y, x=42: None\n"),
 ])
 def test_formatting(inp, exp):
     execer =  builtins.__xonsh__.execer
@@ -47,6 +58,4 @@ def test_formatting(inp, exp):
     exp_tree = execer.parse(exp, {})
     obs_tree = execer.parse(obs, {})
     assert nodes_equal(exp_tree, obs_tree, check_attributes=False)
-
-
 

@@ -7,6 +7,8 @@ from coral.parser import parse, add_comments
 class Formatter(NodeVisitor):
     """Converts a node into a coral-formatted string."""
 
+    # indent helpers
+
     base_indent = "    "
     indent = ""
     indent_level = 0
@@ -18,6 +20,30 @@ class Formatter(NodeVisitor):
     def dec_indent(self):
         self.indent_level -= 1
         self.indent = self.base_indent * self.indent_level
+
+    # other helpers
+
+    def _func_args(self, args):
+        """converts function arguments to a str"""
+        rendered = []
+        npositional = len(args.args) - len(args.defaults)
+        positional_args = args.args[:npositional]
+        keyword_args = args.args[npositional:]
+        keywordonly_args = args.kwonlyargs
+        for arg in positional_args:
+            rendered.append(arg.arg)
+        for arg, default in zip(keyword_args, args.defaults):
+            rendered.append(arg.arg + "=" + self.visit(default))
+        if args.vararg is not None:
+            rendered.append("*" + args.vararg.arg)
+        if keywordonly_args:
+            if args.vararg is None:
+                rendered.append("*")
+            for arg, default in zip(keywordonly_args, args.kw_defaults):
+                rendered.append(arg.arg + "=" + self.visit(default))
+        return ", ".join(rendered)
+
+    # visitors
 
     def visit_Module(self, node):
         parts = []
@@ -84,6 +110,14 @@ class Formatter(NodeVisitor):
             new_elts.append(self.visit(elt))
         s += ", ".join(new_elts)
         s += "}"
+        return s
+
+    def visit_Lambda(self, node):
+        s = "lambda"
+        args = self._func_args(node.args)
+        if args:
+            s += " " + args
+        s += ": " + self.visit(node.body)
         return s
 
 
