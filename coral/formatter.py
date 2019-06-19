@@ -1,10 +1,24 @@
 """Formatting tools for xonsh."""
-from ast import NodeVisitor
+import ast
 
 from coral.parser import parse, add_comments
 
 
-class Formatter(NodeVisitor):
+OP_STRINGS = {
+    ast.Add: "+",
+    ast.Sub: "-",
+    ast.Mult: "*",
+    ast.Div: "/",
+    ast.FloorDiv: "//",
+    ast.Pow: "**",
+}
+
+
+def op_to_str(op):
+    return OP_STRINGS[type(op)]
+
+
+class Formatter(ast.NodeVisitor):
     """Converts a node into a coral-formatted string."""
 
     # indent helpers
@@ -120,6 +134,12 @@ class Formatter(NodeVisitor):
         if args:
             s += " " + args
         s += ": " + self.visit(node.body)
+        return s
+
+    def visit_BinOp(self, node):
+        s = self.visit(node.left) + " "
+        s += op_to_str(node.op)
+        s += " " + self.visit(node.right)
         return s
 
 

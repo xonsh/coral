@@ -44,6 +44,12 @@ from tools import nodes_equal
 ("lambda x,*args,**kwargs: None\n", "lambda x, *args, **kwargs: None\n"),
 ("lambda x, y=42,*args,**kwargs: None\n", "lambda x, y=42, *args, **kwargs: None\n"),
 ("lambda x, y=42,*args, z=43,**kwargs: None\n", "lambda x, y=42, *args, z=43, **kwargs: None\n"),
+("1+2", "1 + 2"),
+("1-2", "1 - 2"),
+("1*2", "1 * 2"),
+("1/2", "1 / 2"),
+("1//2", "1 // 2"),
+("1**2", "1 ** 2"),
 ])
 def test_formatting(inp, exp):
     execer =  builtins.__xonsh__.execer
