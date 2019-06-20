@@ -101,6 +101,9 @@ class Formatter(ast.NodeVisitor):
 
     # top-level visitors
 
+    def generic_visit(self, node):
+        return "<coral:" + str(node.__class__) + " not implemented>"
+
     def visit_Module(self, node):
         parts = []
         for n in node.body:
@@ -144,11 +147,20 @@ class Formatter(ast.NodeVisitor):
         s += '"'
         return s
 
+    def visit_Bytes(self, node):
+        return 'b"' + repr(node.s)[2:-1].replace("'", "\\'") + '"'
+
     def visit_Num(self, node):
         return str(node.n)
 
     def visit_NameConstant(self, node):
         return str(node.value)
+
+    def visit_Ellipsis(self, node):
+        return "..."
+
+    def visit_Constant(self, node):
+        return "<coral:constant not implemented>"
 
     def visit_List(self, node):
         s = "["
@@ -261,6 +273,25 @@ class Formatter(ast.NodeVisitor):
             all_args.append(kw)
         s += ", ".join(all_args) +  ")"
         return s
+
+    def visit_Slice(self, node):
+        s = ""
+        if node.lower is not None:
+            s += self.visit(node.lower)
+        s += ":"
+        if node.upper is not None:
+            s += self.visit(node.upper)
+        if node.step is not None:
+            s += ':' + self.visit(node.step)
+        return s
+
+    # assignable expression visitors
+
+    def visit_Attribute(self, node):
+        return self.visit(node.value) + '.' + node.attr
+
+    def visit_Subscript(self, node):
+        return  self.visit(node.value) + '[' + self.visit(node.slice) + ']'
 
     # statement visitors
 

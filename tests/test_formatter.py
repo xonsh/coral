@@ -13,8 +13,10 @@ from tools import nodes_equal
 ("#a bad comment\n", "# a bad comment\n"),
 ("'single quotes'", '"single quotes"'),
 # (r'r"\raw"', r'r"\raw"'),
+("b'single quotes'", 'b"single quotes"'),
 ("True", "True"),
 ("None\n", "None\n"),
+("...   \n", "...\n"),
 ("42\n", "42\n"),
 ("42.84\n", "42.84\n"),
 ("42E+84\n", "4.2e+85\n"),
@@ -95,6 +97,16 @@ from tools import nodes_equal
 ('f"int({42:.3})"   \n', 'f"int({42:.3})"\n'),
 ('f"int({42:.3!a})"   \n', 'f"int({42:.3!a})"\n'),
 ('f"float({42}) is {float(42):.3}"   \n', 'f"float({42}) is {float(42):.3}"\n'),
+("''  .  join", '"".join'),
+("'hello'   [ 1   :   ] ", '"hello"[1:]'),
+("'hello'   [ :  5 ] ", '"hello"[:5]'),
+("'hello'   [ 1   :  5 ] ", '"hello"[1:5]'),
+("'hello'   [    :  ] ", '"hello"[:]'),
+("'hello'   [    :  : ] ", '"hello"[:]'),
+("'hello'   [    : : -  1 ] ", '"hello"[::-1]'),
+("'hello'   [ 1   : : -  1 ] ", '"hello"[1::-1]'),
+("'hello'   [    : 5 : -  1 ] ", '"hello"[:5:-1]'),
+("'hello'   [  1  : 5 : -  1 ] ", '"hello"[1:5:-1]'),
 ])
 def test_formatting(inp, exp):
     execer =  builtins.__xonsh__.execer
@@ -114,4 +126,3 @@ def test_formatting(inp, exp):
     exp_tree = execer.parse(exp, {})
     obs_tree = execer.parse(obs, {})
     assert nodes_equal(exp_tree, obs_tree, check_attributes=False)
-
