@@ -107,6 +107,13 @@ from tools import nodes_equal
 ("'hello'   [ 1   : : -  1 ] ", '"hello"[1::-1]'),
 ("'hello'   [    : 5 : -  1 ] ", '"hello"[:5:-1]'),
 ("'hello'   [  1  : 5 : -  1 ] ", '"hello"[1:5:-1]'),
+("(1,  2,   *  'hello'  )", '(1, 2, *"hello")'),
+("int   \n", "int\n"),
+("async     def f(): await   1\n", "async def f():\n    await 1\n"),
+("class   A  : \n pass\n", "class A:\n    pass\n"),
+("class   A  (   ): \n pass\n", "class A:\n    pass\n"),
+("class   A ( object ) : \n pass\n", "class A(object):\n    pass\n"),
+("class   A ( object , metaclass = type ) : \n pass\n", "class A(object, metaclass=type):\n    pass\n"),
 ])
 def test_formatting(inp, exp):
     execer =  builtins.__xonsh__.execer

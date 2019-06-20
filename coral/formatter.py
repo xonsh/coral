@@ -113,6 +113,8 @@ class Formatter(ast.NodeVisitor):
             s += "\n"
         return s
 
+    visit_Interactive = visit_Module
+
     def visit_Expression(self, node):
         return self.visit(node.body)
 
@@ -293,6 +295,9 @@ class Formatter(ast.NodeVisitor):
     def visit_Subscript(self, node):
         return  self.visit(node.value) + '[' + self.visit(node.slice) + ']'
 
+    def visit_Starred(self, node):
+        return '*' + self.visit(node.value)
+
     # statement visitors
 
     def visit_FunctionDef(self, node):
@@ -304,6 +309,35 @@ class Formatter(ast.NodeVisitor):
         self.dec_indent()
         s += "\n"
         return s
+
+    def visit_AsyncFunctionDef(self, node):
+        return "async " + self.visit_FunctionDef(node)
+
+    def visit_ClassDef(self, node):
+        s = "class " + node.name
+        if node.bases or node.keywords:
+            s += "("
+            parts = list(map(self.visit, node.bases))
+            for keyword in node.keywords:
+                parts.append(keyword.arg + '=' + self.visit(keyword.value))
+            s += ", ".join(parts) + ")"
+        self.inc_indent()
+        s += ":" + self.nl_indent
+        parts = list(map(self.visit, node.body))
+        s += self.nl_indent.join(parts)
+        self.dec_indent()
+        s += "\n"
+        return s
+
+    def visit_Pass(self, node):
+        return "pass"
+
+    def visit_Break(self, node):
+        return "break"
+
+    def visit_Continue(self, node):
+        return "continue"
+
 
 
 def format(tree):
