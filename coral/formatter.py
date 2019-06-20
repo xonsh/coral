@@ -23,6 +23,12 @@ OP_STRINGS = {
     ast.UAdd: "+",
     ast.Invert: "~",
     ast.Not: "not",
+    ast.Lt: "<",
+    ast.LtE: "<=",
+    ast.Gt: ">",
+    ast.GtE: ">=",
+    ast.Eq: "==",
+    ast.NotEq: "!=",
 }
 
 
@@ -213,6 +219,12 @@ class Formatter(ast.NodeVisitor):
 
     def visit_YieldFrom(self, node):
         return "yield from " + self.visit(node.value)
+
+    def visit_Compare(self, node):
+        s = self.visit(node.left)
+        for op, comparator in zip(node.ops, node.comparators):
+            s += " " + op_to_str(op) + " " + self.visit(comparator)
+        return s
 
     # statement visitors
 

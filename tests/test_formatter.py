@@ -76,6 +76,13 @@ from tools import nodes_equal
 ("def f(): await   1\n", "def f():\n    await 1\n"),
 ("def f():\n yield  1\n", "def f():\n    yield 1\n"),
 ("def f():\n yield   from  [ ]\n", "def f():\n    yield from []\n"),
+("2 <   3", "2 < 3"),
+("2 <=   3", "2 <= 3"),
+("2 >   3", "2 > 3"),
+("2 >=   3", "2 >= 3"),
+("2 ==   3", "2 == 3"),
+("2 !=   3", "2 != 3"),
+("2  <   3   <4", "2 < 3 < 4"),
 ])
 def test_formatting(inp, exp):
     execer =  builtins.__xonsh__.execer
