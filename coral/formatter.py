@@ -37,15 +37,18 @@ class Formatter(ast.NodeVisitor):
 
     base_indent = "    "
     indent = ""
+    nl_indent = "\n"
     indent_level = 0
 
     def inc_indent(self):
         self.indent_level += 1
         self.indent = self.base_indent * self.indent_level
+        self.nl_indent = "\n" + self.indent
 
     def dec_indent(self):
         self.indent_level -= 1
         self.indent = self.base_indent * self.indent_level
+        self.nl_indent = "\n" + self.indent
 
     # other helpers
 
@@ -71,16 +74,30 @@ class Formatter(ast.NodeVisitor):
             rendered.append("**" + args.kwarg.arg)
         return ", ".join(rendered)
 
-    # visitors
+    def _generators(self, node):
+        s = ""
+        for generator in node.generators:
+            s += " for " + self.visit(generator.target)
+            s += " in " + self.visit(generator.iter)
+            for clause in generator.ifs:
+                s += " if " + self.visit(clause)
+        return s
+
+    # top-level visitors
 
     def visit_Module(self, node):
         parts = []
         for n in node.body:
             parts.append(self.visit(n))
-        return "\n".join(parts) + "\n"
+        s = "\n".join(parts)
+        if not s.endswith("\n"):
+            s += "\n"
+        return s
 
     def visit_Expression(self, node):
         return self.visit(node.body)
+
+    # expression visitors
 
     def visit_Expr(self, node):
         return self.visit(node.value)
@@ -174,15 +191,6 @@ class Formatter(ast.NodeVisitor):
         s += " else " + self.visit(node.orelse)
         return s
 
-    def _generators(self, node):
-        s = ""
-        for generator in node.generators:
-            s += " for " + self.visit(generator.target)
-            s += " in " + self.visit(generator.iter)
-            for clause in generator.ifs:
-                s += " if " + self.visit(clause)
-        return s
-
     def visit_ListComp(self, node):
         return "[" + self.visit(node.elt) + self._generators(node) + "]"
 
@@ -196,6 +204,21 @@ class Formatter(ast.NodeVisitor):
 
     def visit_GeneratorExp(self, node):
         return "(" + self.visit(node.elt) + self._generators(node) + ")"
+
+    def visit_Await(self, node):
+        return "await " + self.visit(node.value)
+
+    # statement visitors
+
+    def visit_FunctionDef(self, node):
+        s = "def " + node.name + "(" + self._func_args(node.args) + "):"
+        self.inc_indent()
+        s += self.nl_indent + self.nl_indent.join(map(self.visit, node.body))
+        if node.returns:
+            s += self.nl_indent + self.visit(node.returns)
+        self.dec_indent()
+        s += "\n"
+        return s
 
 
 def format(tree):
