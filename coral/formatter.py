@@ -89,6 +89,9 @@ class Formatter(ast.NodeVisitor):
         _, _, comment = node.s.partition('#')
         return '# ' + comment.strip()
 
+    def visit_Name(self, node):
+        return node.id
+
     def visit_Str(self, node):
         return '"' + node.s  + '"'
 
@@ -164,6 +167,21 @@ class Formatter(ast.NodeVisitor):
         if isinstance(node.op, ast.Not):
             space = " "
         s = op_to_str(node.op) + space + self.visit(node.operand)
+        return s
+
+    def visit_IfExp(self, node):
+        s = self.visit(node.body) + " if " + self.visit(node.test)
+        s += " else " + self.visit(node.orelse)
+        return s
+
+    def visit_ListComp(self, node):
+        s = "[" + self.visit(node.elt)
+        for generator in node.generators:
+            s += " for " + self.visit(generator.target)
+            s += " in " + self.visit(generator.iter)
+            for clause in generator.ifs:
+                s += " if " + self.visit(clause)
+        s += "]"
         return s
 
 

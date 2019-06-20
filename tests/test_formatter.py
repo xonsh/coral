@@ -64,6 +64,12 @@ from tools import nodes_equal
 ("+  1", "+1"),
 ("not   False", "not False"),
 ("~  True", "~True"),
+("1   if   True   else   2", "1 if True else 2"),
+("[ i*2 for i in [ 1, 2, 3 ] ]", "[i * 2 for i in [1, 2, 3]]"),
+("[ i*2 for i in [ 1, 2, 3 ] if   True ]", "[i * 2 for i in [1, 2, 3] if True]"),
+("[ i*2 for i in [ 1, 2, 3 ] for x in [4, 5] ]", "[i * 2 for i in [1, 2, 3] for x in [4, 5]]"),
+("[ i*2 for i in [ 1, 2, 3 ] if True for x in [4, 5] if False ]",
+ "[i * 2 for i in [1, 2, 3] if True for x in [4, 5] if False]"),
 ])
 def test_formatting(inp, exp):
     execer =  builtins.__xonsh__.execer
