@@ -208,6 +208,12 @@ class Formatter(ast.NodeVisitor):
     def visit_Await(self, node):
         return "await " + self.visit(node.value)
 
+    def visit_Yield(self, node):
+        return "yield " + self.visit(node.value)
+
+    def visit_YieldFrom(self, node):
+        return "yield from " + self.visit(node.value)
+
     # statement visitors
 
     def visit_FunctionDef(self, node):

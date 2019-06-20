@@ -74,6 +74,8 @@ from tools import nodes_equal
 ("{ i*2 for i in [ 1, 2, 3 ] }", "{i * 2 for i in [1, 2, 3]}"),
 ("(  i*2 for i in [ 1, 2, 3 ]  ) \n", "(i * 2 for i in [1, 2, 3])\n"),
 ("def f(): await   1\n", "def f():\n    await 1\n"),
+("def f():\n yield  1\n", "def f():\n    yield 1\n"),
+("def f():\n yield   from  [ ]\n", "def f():\n    yield from []\n"),
 ])
 def test_formatting(inp, exp):
     execer =  builtins.__xonsh__.execer
