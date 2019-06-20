@@ -329,6 +329,32 @@ class Formatter(ast.NodeVisitor):
         s += "\n"
         return s
 
+    def visit_Return(self, node):
+        s = "return"
+        if node.value is not None:
+            s += " " + self.visit(node.value)
+        return s
+
+    def visit_Delete(self, node):
+        return "del " + ", ".join(map(self.visit, node.targets))
+
+    def visit_Assign(self, node):
+        return ", ".join(map(self.visit, node.targets)) + " = " + self.visit(node.value)
+
+    def visit_AugAssign(self, node):
+        return self.visit(node.target) + " " + op_to_str(node.op) + "= " + self.visit(node.value)
+
+    def visit__AnnAssign(self, node):
+        use_paren = node.simple == 0 and isinstance(node.target, ast.Name)
+        s = "(" if use_paren else ""
+        s += self.visit(node.target)
+        if use_paren:
+            s += ")"
+        s += ": " + self.visit(node.annotation)
+        if node.value is not None:
+            s += " = " + self.visit(node.value)
+        return s
+
     def visit_Pass(self, node):
         return "pass"
 

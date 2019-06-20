@@ -114,6 +114,15 @@ from tools import nodes_equal
 ("class   A  (   ): \n pass\n", "class A:\n    pass\n"),
 ("class   A ( object ) : \n pass\n", "class A(object):\n    pass\n"),
 ("class   A ( object , metaclass = type ) : \n pass\n", "class A(object, metaclass=type):\n    pass\n"),
+("def f(): return   \n", "def f():\n    return\n"),
+("def f(): return   1\n", "def f():\n    return 1\n"),
+("x    =    42\n", "x = 42\n"),
+("x    =    42\ndel    x   \n", "x = 42\ndel x\n"),
+("x    =    42\nx  +=    1\n", "x = 42\nx += 1\n"),
+# Fix xonsh for the following
+#("def f():\n  c  :    int   \n", "def f():\n    c: int\n"),
+#("def f():\n  ( c  ):    int   \n", "def f():\n    (c): int\n"),
+("c  :   int  =  1\n", "c: int = 1\n"),
 ])
 def test_formatting(inp, exp):
     execer =  builtins.__xonsh__.execer
