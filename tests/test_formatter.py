@@ -56,6 +56,14 @@ from tools import nodes_equal
 ("1|2", "1 | 2"),
 ("1^2", "1 ^ 2"),
 ("1&2", "1 & 2"),
+("True  and    False", "True and False"),
+("True  and    False and None", "True and False and None"),
+("True  or    False", "True or False"),
+("True  or    False   or    None", "True or False or None"),
+("-  1", "-1"),
+("+  1", "+1"),
+("not   False", "not False"),
+("~  True", "~True"),
 ])
 def test_formatting(inp, exp):
     execer =  builtins.__xonsh__.execer

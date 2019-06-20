@@ -17,6 +17,12 @@ OP_STRINGS = {
     ast.BitAnd: "&",
     ast.BitOr: "|",
     ast.BitXor: "^",
+    ast.Or: "or",
+    ast.And: "and",
+    ast.USub: "-",
+    ast.UAdd: "+",
+    ast.Invert: "~",
+    ast.Not: "not",
 }
 
 
@@ -146,6 +152,18 @@ class Formatter(ast.NodeVisitor):
         s = self.visit(node.left) + " "
         s += op_to_str(node.op)
         s += " " + self.visit(node.right)
+        return s
+
+    def visit_BoolOp(self, node):
+        op = " " + op_to_str(node.op) + " "
+        s = op.join(map(self.visit, node.values))
+        return s
+
+    def visit_UnaryOp(self, node):
+        space = ""
+        if isinstance(node.op, ast.Not):
+            space = " "
+        s = op_to_str(node.op) + space + self.visit(node.operand)
         return s
 
 
