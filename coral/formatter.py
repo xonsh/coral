@@ -11,6 +11,12 @@ OP_STRINGS = {
     ast.Div: "/",
     ast.FloorDiv: "//",
     ast.Pow: "**",
+    ast.MatMult: "@",
+    ast.LShift: "<<",
+    ast.RShift: ">>",
+    ast.BitAnd: "&",
+    ast.BitOr: "|",
+    ast.BitXor: "^",
 }
 
 
