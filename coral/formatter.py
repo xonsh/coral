@@ -174,15 +174,28 @@ class Formatter(ast.NodeVisitor):
         s += " else " + self.visit(node.orelse)
         return s
 
-    def visit_ListComp(self, node):
-        s = "[" + self.visit(node.elt)
+    def _generators(self, node):
+        s = ""
         for generator in node.generators:
             s += " for " + self.visit(generator.target)
             s += " in " + self.visit(generator.iter)
             for clause in generator.ifs:
                 s += " if " + self.visit(clause)
-        s += "]"
         return s
+
+    def visit_ListComp(self, node):
+        return "[" + self.visit(node.elt) + self._generators(node) + "]"
+
+    def visit_DictComp(self, node):
+        s = "{" + self.visit(node.key) + ": " + self.visit(node.value)
+        s += self._generators(node) + "}"
+        return s
+
+    def visit_SetComp(self, node):
+        return "{" + self.visit(node.elt) + self._generators(node) + "}"
+
+    def visit_GeneratorExp(self, node):
+        return "(" + self.visit(node.elt) + self._generators(node) + ")"
 
 
 def format(tree):
