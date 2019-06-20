@@ -122,7 +122,7 @@ from tools import nodes_equal
 # Fix xonsh for the following
 #("def f():\n  c  :    int   \n", "def f():\n    c: int\n"),
 #("def f():\n  ( c  ):    int   \n", "def f():\n    (c): int\n"),
-("c  :   int  =  1\n", "c: int = 1\n"),
+#("c  :   int  =  1\n", "c: int = 1\n"),
 ])
 def test_formatting(inp, exp):
     execer =  builtins.__xonsh__.execer

@@ -339,12 +339,14 @@ class Formatter(ast.NodeVisitor):
         return "del " + ", ".join(map(self.visit, node.targets))
 
     def visit_Assign(self, node):
+        if isinstance(node, ast.AnnAssign):
+            return self.visit_AnnAssign(node)
         return ", ".join(map(self.visit, node.targets)) + " = " + self.visit(node.value)
 
     def visit_AugAssign(self, node):
         return self.visit(node.target) + " " + op_to_str(node.op) + "= " + self.visit(node.value)
 
-    def visit__AnnAssign(self, node):
+    def visit_AnnAssign(self, node):
         use_paren = node.simple == 0 and isinstance(node.target, ast.Name)
         s = "(" if use_paren else ""
         s += self.visit(node.target)
