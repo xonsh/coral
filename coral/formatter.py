@@ -3,7 +3,6 @@ import ast
 
 from coral.parser import parse, add_comments
 
-
 OP_STRINGS = {
     ast.Add: "+",
     ast.Sub: "-",
@@ -38,6 +37,13 @@ OP_STRINGS = {
 
 def op_to_str(op):
     return OP_STRINGS[type(op)]
+
+
+def remove_outer_quotes(s):
+    if not s.endswith('"'):
+        return s
+    return s.partition('"')[2].rpartition('"')[0]
+
 
 
 class Formatter(ast.NodeVisitor):
@@ -121,6 +127,22 @@ class Formatter(ast.NodeVisitor):
 
     def visit_Str(self, node):
         return '"' + node.s  + '"'
+
+    def visit_FormattedValue(self, node):
+        s = "{" + self.visit(node.value)
+        if node.format_spec is not None:
+            s += ":" + remove_outer_quotes(self.visit(node.format_spec))
+        if node.conversion >= 0:
+            s += "!" + chr(node.conversion)
+        s += "}"
+        return s
+
+    def visit_JoinedStr(self, node):
+        s = 'f"'
+        for value in node.values:
+            s += remove_outer_quotes(self.visit(value))
+        s += '"'
+        return s
 
     def visit_Num(self, node):
         return str(node.n)

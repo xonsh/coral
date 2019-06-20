@@ -12,6 +12,7 @@ from tools import nodes_equal
 @pytest.mark.parametrize("inp, exp", [
 ("#a bad comment\n", "# a bad comment\n"),
 ("'single quotes'", '"single quotes"'),
+# (r'r"\raw"', r'r"\raw"'),
 ("True", "True"),
 ("None\n", "None\n"),
 ("42\n", "42\n"),
@@ -90,6 +91,10 @@ from tools import nodes_equal
 ("int(42.0)", "int(42.0)"),
 ("int(42.0,    2)", "int(42.0, 2)"),
 ("int(42.0,    base = 2)", "int(42.0, base=2)"),
+('f"{True!r}" \n', 'f"{True!r}"\n'),
+('f"int({42:.3})"   \n', 'f"int({42:.3})"\n'),
+('f"int({42:.3!a})"   \n', 'f"int({42:.3!a})"\n'),
+('f"float({42}) is {float(42):.3}"   \n', 'f"float({42}) is {float(42):.3}"\n'),
 ])
 def test_formatting(inp, exp):
     execer =  builtins.__xonsh__.execer

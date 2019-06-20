@@ -138,6 +138,8 @@ def parse(s, ctx=None, filename="<code>", mode="exec", debug_level=0):
     comments : list of Comment
         A list of xonsh comment instances.
     """
+    if ctx is None:
+        ctx = set(__builtins__.keys())
     with swapexec(debug_level) as (execer, comments, lines):
         tree = execer.parse(s, ctx, filename=filename, mode=mode)
     return tree, comments, lines
