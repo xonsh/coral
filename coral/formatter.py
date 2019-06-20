@@ -29,6 +29,10 @@ OP_STRINGS = {
     ast.GtE: ">=",
     ast.Eq: "==",
     ast.NotEq: "!=",
+    ast.Is: "is",
+    ast.IsNot: "is not",
+    ast.In: "in",
+    ast.NotIn: "not in",
 }
 
 
@@ -224,6 +228,16 @@ class Formatter(ast.NodeVisitor):
         s = self.visit(node.left)
         for op, comparator in zip(node.ops, node.comparators):
             s += " " + op_to_str(op) + " " + self.visit(comparator)
+        return s
+
+    def visit_Call(self, node):
+        s = self.visit(node.func) + "("
+        all_args = []
+        all_args.extend(map(self.visit, node.args))
+        for keyword in node.keywords:
+            kw = keyword.arg + "=" + self.visit(keyword.value)
+            all_args.append(kw)
+        s += ", ".join(all_args) +  ")"
         return s
 
     # statement visitors

@@ -83,6 +83,13 @@ from tools import nodes_equal
 ("2 ==   3", "2 == 3"),
 ("2 !=   3", "2 != 3"),
 ("2  <   3   <4", "2 < 3 < 4"),
+("2 is   3", "2 is 3"),
+("2 is   not  3", "2 is not 3"),
+("2 in   [3]", "2 in [3]"),
+("2 not   in   [3]", "2 not in [3]"),
+("int(42.0)", "int(42.0)"),
+("int(42.0,    2)", "int(42.0, 2)"),
+("int(42.0,    base = 2)", "int(42.0, base=2)"),
 ])
 def test_formatting(inp, exp):
     execer =  builtins.__xonsh__.execer
