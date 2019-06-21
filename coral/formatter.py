@@ -111,6 +111,12 @@ class Formatter(ast.NodeVisitor):
         s += "\n"
         return s
 
+    def _withitem(self, item):
+        s = self.visit(item.context_expr)
+        if item.optional_vars is not None:
+            s += " as " + self.visit(item.optional_vars)
+        return s
+
     # top-level visitors
 
     def generic_visit(self, node):
@@ -398,6 +404,16 @@ class Formatter(ast.NodeVisitor):
         if not s.endswith("\n"):
             s += "\n"
         return s
+
+    def visit_With(self, node):
+        s = "with " + ", ".join(map(self._withitem, node.items)) + ":"
+        self.inc_indent()
+        s += self.nl_indent + self.nl_indent.join(map(self.visit, node.body))
+        self.dec_indent()
+        return s
+
+    def visit_AsyncWith(self, node):
+        return "async " + self.visit_With(node)
 
     def visit_Pass(self, node):
         return "pass"

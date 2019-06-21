@@ -137,6 +137,8 @@ from tools import nodes_equal
  "if True:\n    pass\nelif False:\n    pass\nelse:\n    pass\n"),
 ("if    True  :  \n  pass  \nelif  False :\n   pass  \nelif  None :\n   pass  \nelse:\n  pass\n",
  "if True:\n    pass\nelif False:\n    pass\nelif None:\n    pass\nelse:\n    pass\n"),
+("with   None  :\n  pass\n", "with None:\n    pass\n"),
+("async   with   None  :\n  pass\n", "async with None:\n    pass\n"),
 ])
 def test_formatting(inp, exp):
     execer =  builtins.__xonsh__.execer
