@@ -415,6 +415,14 @@ class Formatter(ast.NodeVisitor):
     def visit_AsyncWith(self, node):
         return "async " + self.visit_With(node)
 
+    def visit_Raise(self, node):
+        s = "raise"
+        if node.exc is not None:
+            s += " " + self.visit(node.exc)
+            if node.cause is not None:
+                s += " from " + self.visit(node.cause)
+        return s
+
     def visit_Pass(self, node):
         return "pass"
 
