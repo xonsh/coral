@@ -123,6 +123,9 @@ from tools import nodes_equal
 #("def f():\n  c  :    int   \n", "def f():\n    c: int\n"),
 #("def f():\n  ( c  ):    int   \n", "def f():\n    (c): int\n"),
 #("c  :   int  =  1\n", "c: int = 1\n"),
+("for   i    in   [ 1, 2,  3 ]:\n\n  pass\n", "for i in [1, 2, 3]:\n    pass\n"),
+("for   i    in   [ 1, 2,  3 ]:\n\n  pass\nelse:\n\n  pass\n\n",
+ "for i in [1, 2, 3]:\n    pass\nelse:\n    pass\n"),
 ])
 def test_formatting(inp, exp):
     execer =  builtins.__xonsh__.execer

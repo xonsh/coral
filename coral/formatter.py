@@ -357,6 +357,20 @@ class Formatter(ast.NodeVisitor):
             s += " = " + self.visit(node.value)
         return s
 
+    def visit_For(self, node):
+        s = "for " + self.visit(node.target) + " in "
+        s += self.visit(node.iter) + ":"
+        self.inc_indent()
+        s += self.nl_indent + self.nl_indent.join(map(self.visit, node.body))
+        self.dec_indent()
+        if node.orelse:
+            s += "\nelse:"
+            self.inc_indent()
+            s += self.nl_indent + self.nl_indent.join(map(self.visit, node.orelse))
+            self.dec_indent()
+        s += "\n"
+        return s
+
     def visit_Pass(self, node):
         return "pass"
 
