@@ -99,6 +99,18 @@ class Formatter(ast.NodeVisitor):
                 s += " if " + self.visit(clause)
         return s
 
+    def _loop_body(self, node):
+        self.inc_indent()
+        s = self.nl_indent + self.nl_indent.join(map(self.visit, node.body))
+        self.dec_indent()
+        if node.orelse:
+            s += "\nelse:"
+            self.inc_indent()
+            s += self.nl_indent + self.nl_indent.join(map(self.visit, node.orelse))
+            self.dec_indent()
+        s += "\n"
+        return s
+
     # top-level visitors
 
     def generic_visit(self, node):
@@ -360,15 +372,31 @@ class Formatter(ast.NodeVisitor):
     def visit_For(self, node):
         s = "for " + self.visit(node.target) + " in "
         s += self.visit(node.iter) + ":"
+        s += self._loop_body(node)
+        return s
+
+    def visit_AsyncFor(self, node):
+        return "async " + self.visit_For(node)
+
+    def visit_While(self, node):
+        s = "while " + self.visit(node.test) + ":"
+        s += self._loop_body(node)
+        return s
+
+    def visit_If(self, node):
+        s = "if " + self.visit(node.test) + ":"
         self.inc_indent()
         s += self.nl_indent + self.nl_indent.join(map(self.visit, node.body))
         self.dec_indent()
-        if node.orelse:
+        if len(node.orelse) == 1 and isinstance(node.orelse[0], ast.If):
+            s += "\nel" + self.visit_If(node.orelse[0])
+        elif node.orelse:
             s += "\nelse:"
             self.inc_indent()
             s += self.nl_indent + self.nl_indent.join(map(self.visit, node.orelse))
             self.dec_indent()
-        s += "\n"
+        if not s.endswith("\n"):
+            s += "\n"
         return s
 
     def visit_Pass(self, node):

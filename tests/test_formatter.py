@@ -126,6 +126,17 @@ from tools import nodes_equal
 ("for   i    in   [ 1, 2,  3 ]:\n\n  pass\n", "for i in [1, 2, 3]:\n    pass\n"),
 ("for   i    in   [ 1, 2,  3 ]:\n\n  pass\nelse:\n\n  pass\n\n",
  "for i in [1, 2, 3]:\n    pass\nelse:\n    pass\n"),
+("async   for   i    in   [ 1, 2,  3 ]:\n\n  pass\n", "async for i in [1, 2, 3]:\n    pass\n"),
+("while    True  :  \n  break  \n", "while True:\n    break\n"),
+("while    True  :  \n  break  \nelse:\n  pass\n\n",
+ "while True:\n    break\nelse:\n    pass\n"),
+("if    True  :  \n  pass  \n", "if True:\n    pass\n"),
+("if    True  :  \n  pass  \nelse:\n  pass\n",
+ "if True:\n    pass\nelse:\n    pass\n"),
+("if    True  :  \n  pass  \nelif  False :\n   pass  \nelse:\n  pass\n",
+ "if True:\n    pass\nelif False:\n    pass\nelse:\n    pass\n"),
+("if    True  :  \n  pass  \nelif  False :\n   pass  \nelif  None :\n   pass  \nelse:\n  pass\n",
+ "if True:\n    pass\nelif False:\n    pass\nelif None:\n    pass\nelse:\n    pass\n"),
 ])
 def test_formatting(inp, exp):
     execer =  builtins.__xonsh__.execer
