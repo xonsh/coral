@@ -94,6 +94,10 @@ def main():
         },
         #cmdclass=cmdclass,
         scripts=scripts,
+        install_requires=[
+            'lazyasd',
+            'xonsh',
+        ],
     )
     skw["python_requires"] = ">=3.5"
     setup(**skw)
